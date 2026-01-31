@@ -175,9 +175,11 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-4xl bg-white rounded-2xl shadow-xl overflow-hidden flex">
+      {/* Changed max-w-4xl to max-w-6xl for wider container */}
+      <div className="w-full max-w-6xl bg-white rounded-2xl shadow-xl overflow-hidden flex">
         {/* Left Side - Form */}
-        <div className="flex-1 p-6 lg:p-8">
+        {/* Changed flex-1 to have more specific width control */}
+        <div className="w-full lg:w-[55%] p-8 lg:p-12">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 mb-8">
             <Image
@@ -193,48 +195,48 @@ export default function SignupPage() {
             </span>
           </Link>
 
-          <div className="mb-4">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
               Create your account
             </h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-base text-gray-600">
               Join EduLink Hub and start your learning journey
             </p>
           </div>
 
           {/* Role Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
               I want to sign up as:
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
                 onClick={() => setRole('student')}
-                className={`p-3 border-2 rounded-lg text-center transition-all ${
+                className={`p-4 border-2 rounded-lg text-center transition-all ${
                   role === 'student'
                     ? 'border-[#0D9488] bg-[#0D9488]/5'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <div className="text-xl mb-1">🎓</div>
-                <div className="font-semibold text-gray-900 text-sm">Student</div>
-                <div className="text-xs text-gray-500">
+                <div className="text-2xl mb-2">🎓</div>
+                <div className="font-semibold text-gray-900">Learner</div>
+                <div className="text-sm text-gray-500 mt-1">
                   Learn from experts
                 </div>
               </button>
               <button
                 type="button"
                 onClick={() => setRole('educator')}
-                className={`p-3 border-2 rounded-lg text-center transition-all ${
+                className={`p-4 border-2 rounded-lg text-center transition-all ${
                   role === 'educator'
                     ? 'border-[#0D9488] bg-[#0D9488]/5'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <div className="text-xl mb-1">👨‍🏫</div>
-                <div className="font-semibold text-gray-900 text-sm">Educator</div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-2xl mb-2">👨‍🏫</div>
+                <div className="font-semibold text-gray-900">Educator</div>
+                <div className="text-sm text-gray-500 mt-1">
                   Teach and inspire
                 </div>
               </button>
@@ -243,7 +245,7 @@ export default function SignupPage() {
 
           {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
@@ -252,7 +254,7 @@ export default function SignupPage() {
           <button
             onClick={handleGoogleSignup}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors mb-5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -272,39 +274,39 @@ export default function SignupPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span className="font-medium text-gray-700 text-sm">
+            <span className="font-medium text-gray-700">
               {loading ? 'Signing up...' : `Sign up with Google`}
             </span>
           </button>
 
-          <div className="relative mb-4">
+          <div className="relative mb-5">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300"></div>
             </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="px-2 bg-white text-gray-500">
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-white text-gray-500">
                 Or continue with email
               </span>
             </div>
           </div>
 
           {/* Email Sign Up Form */}
-          <form onSubmit={handleEmailSignup} className="space-y-3">
+          <form onSubmit={handleEmailSignup} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Full Name
               </label>
               <div className="relative">
                 <User
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  size={18}
+                  size={20}
                 />
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D9488] focus:border-transparent outline-none transition"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D9488] focus:border-transparent outline-none transition"
                   placeholder="Enter your full name"
                   disabled={loading}
                 />
@@ -312,20 +314,20 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
               <div className="relative">
                 <Mail
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  size={18}
+                  size={20}
                 />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D9488] focus:border-transparent outline-none transition"
+                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D9488] focus:border-transparent outline-none transition"
                   placeholder="Enter your email"
                   disabled={loading}
                 />
@@ -333,20 +335,20 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Password
               </label>
               <div className="relative">
                 <Lock
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  size={18}
+                  size={20}
                 />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-12 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D9488] focus:border-transparent outline-none transition"
+                  className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D9488] focus:border-transparent outline-none transition"
                   placeholder="Create a password"
                   disabled={loading}
                 />
@@ -355,26 +357,26 @@ export default function SignupPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Confirm Password
               </label>
               <div className="relative">
                 <Lock
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  size={18}
+                  size={20}
                 />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-12 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D9488] focus:border-transparent outline-none transition"
+                  className="w-full pl-11 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0D9488] focus:border-transparent outline-none transition"
                   placeholder="Confirm your password"
                   disabled={loading}
                 />
@@ -383,12 +385,12 @@ export default function SignupPage() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-start">
+            <div className="flex items-start pt-1">
               <input
                 type="checkbox"
                 id="terms"
@@ -411,14 +413,14 @@ export default function SignupPage() {
             <Button
               type="submit"
               variant="teal"
-              className="w-full"
+              className="w-full py-3"
               disabled={loading}
             >
               {loading ? 'Creating Account...' : `Create Account`}
             </Button>
           </form>
 
-          <p className="mt-4 text-center text-xs text-gray-600">
+          <p className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{' '}
             <Link href="/login" className="text-[#0D9488] hover:underline font-semibold">
               Log in
@@ -427,7 +429,8 @@ export default function SignupPage() {
         </div>
 
         {/* Right Side - Image */}
-        <div className="hidden lg:block lg:w-1/2 relative">
+        {/* Changed lg:w-1/2 to lg:w-[45%] to balance with the wider form */}
+        <div className="hidden lg:block lg:w-[45%] relative">
           <Image
             src="/images/signup-bg.jpg"
             alt="Students learning"
