@@ -231,7 +231,7 @@ export default function StudentCertificationPage() {
                 key={course.courseId}
                 className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden"
               >
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
+                <div className="bg-linear-to-r from-blue-600 to-purple-600 p-6 text-white">
                   <Award className="w-12 h-12 mb-3" />
                   <h3 className="text-xl font-bold">{course.courseTitle}</h3>
                   <p className="text-blue-100 text-sm mt-1">Instructor: {course.instructorName}</p>
