@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Certificate of Completion</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    .controls {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 0 10px;
+      transition: all 0.3s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .certificate {
+      background: white;
+      padding: 60px;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .certificate::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+      border: 3px solid #667eea;
+      border-radius: 10px;
+      pointer-events: none;
+    }
+
+    .certificate::after {
+      content: '';
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      right: 30px;
+      bottom: 30px;
+      border: 1px solid #ddd;
+      pointer-events: none;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 36px;
+      font-weight: bold;
+    }
+
+    h1 {
+      font-size: 48px;
+      color: #667eea;
+      margin-bottom: 10px;
+      font-weight: normal;
+      letter-spacing: 2px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #666;
+      font-style: italic;
+    }
+
+    .content {
+      text-align: center;
+      margin: 50px 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .awarded-to {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    .student-name {
+      font-size: 42px;
+      color: #333;
+      margin-bottom: 30px;
+      font-weight: bold;
+      border-bottom: 2px solid #667eea;
+      display: inline-block;
+      padding-bottom: 10px;
+    }
+
+    .completion-text {
+      font-size: 18px;
+      color: #666;
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    .course-name {
+      font-size: 28px;
+      color: #667eea;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+
+    .grade-box {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+
+    .grade-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .grade-value {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 60px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .signature-block {
+      text-align: center;
+      flex: 1;
+    }
+
+    .signature-line {
+      width: 200px;
+      border-top: 2px solid #333;
+      margin: 0 auto 10px;
+      padding-top: 40px;
+    }
+
+    .signature-name {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .signature-title {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .certificate-number {
+      text-align: center;
+      margin-top: 40px;
+      color: #999;
+      font-size: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 120px;
+      color: rgba(102, 126, 234, 0.05);
+      font-weight: bold;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+      .controls {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="controls">
+      <button class="btn" onclick="downloadPDF()">📥 Download PDF</button>
+      <button class="btn" onclick="window.print()">🖨️ Print Certificate</button>
+      <button class="btn" onclick="shareCertificate()">🔗 Share</button>
+    </div>
+
+    <div class="certificate" id="certificate">
+      <div class="watermark">CERTIFIED</div>
+      
+      <div class="header">
+        <div class="logo">🎓</div>
+        <h1>Certificate of Completion</h1>
+        <p class="subtitle">This certifies that</p>
+      </div>
+
+      <div class="content">
+        <p class="awarded-to">This is awarded to</p>
+        <div class="student-name" id="studentName">John Doe</div>
+        
+        <p class="completion-text">
+          Has successfully completed the course
+        </p>
+        
+        <div class="course-name" id="courseName">Advanced Web Development</div>
+        
+        <div class="grade-box">
+          <div class="grade-label">Final Grade</div>
+          <div class="grade-value" id="gradeValue">95%</div>
+        </div>
+        
+        <p class="completion-text" style="margin-top: 30px;">
+          Awarded on <span id="issueDate">January 15, 2024</span>
+        </p>
+      </div>
+
+      <div class="footer">
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div class="signature-name" id="instructorName">Instructor</div>
+          <div class="signature-title">Course Instructor</div>
+        </div>
+        
+        <div class="signature-block">
+          <div class="signature-line"></div>
+          <div class="signature-name">Platform Administrator</div>
+          <div class="signature-title">EdTech Platform</div>
+        </div>
+      </div>
+
+      <div class="certificate-number">
+        Certificate No: <span id="certNumber">CERT-2024-001234</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    
+    document.getElementById('studentName').textContent = params.get('student') || 'John Doe';
+    document.getElementById('courseName').textContent = params.get('course') || 'Course Name';
+    document.getElementById('gradeValue').textContent = params.get('grade') || '100%';
+    document.getElementById('instructorName').textContent = params.get('instructor') || 'Instructor';
+    document.getElementById('issueDate').textContent = params.get('date') || new Date().toLocaleDateString();
+    document.getElementById('certNumber').textContent = params.get('number') || 'CERT-2024-001234';
+
+    async function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const certificate = document.getElementById('certificate');
+      
+      document.querySelector('.controls').style.display = 'none';
+      
+      const canvas = await html2canvas(certificate, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+      
+      document.querySelector('.controls').style.display = 'block';
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`certificate-${params.get('number') || 'download'}.pdf`);
+    }
+
+    function shareCertificate() {
+      const url = window.location.href;
+      
+      if (navigator.share) {
+        navigator.share({
+          title: 'My Course Completion Certificate',
+          text: `I just completed ${params.get('course')}!`,
+          url: url
+        });
+      } else {
+        navigator.clipboard.writeText(url);
+        alert('Certificate link copied to clipboard! 📋');
+      }
+    }
+  </script>
+</body>
+</html>
