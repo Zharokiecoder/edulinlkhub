@@ -9,21 +9,6 @@ interface Course {
   id: string;
   title: string;
   instructor_id: string;
-  instructor?: {
-    full_name: string;
-  };
-}
-
-interface LessonProgress {
-  lesson_id: string;
-  completed: boolean;
-}
-
-interface QuizAttempt {
-  quiz_id: string;
-  score: number;
-  passed: boolean;
-  created_at: string;
 }
 
 export default function StudentCertificationPage() {
@@ -54,7 +39,7 @@ export default function StudentCertificationPage() {
 
       console.log('👤 Current user:', user.id, user.email);
 
-      // Get all enrollments for this student
+      // Get all enrollments for this student (using student_id)
       const { data: enrollments, error: enrollError } = await supabase
         .from('enrollments')
         .select(`
@@ -62,13 +47,10 @@ export default function StudentCertificationPage() {
           courses (
             id,
             title,
-            instructor_id,
-            users!courses_instructor_id_fkey (
-              full_name
-            )
+            instructor_id
           )
         `)
-        .eq('user_id', user.id);
+        .eq('student_id', user.id);  // Changed from user_id to student_id
 
       if (enrollError) {
         console.error('❌ Error fetching enrollments:', enrollError);
@@ -122,11 +104,11 @@ export default function StudentCertificationPage() {
         const totalQuizzes = quizzes?.length || 0;
         console.log(`  📝 Total quizzes: ${totalQuizzes}`);
 
-        // Get completed lessons
+        // Get completed lessons (using student_id)
         const { data: completedLessons, error: progressError } = await supabase
           .from('lesson_progress')
           .select('lesson_id, completed')
-          .eq('user_id', user.id)
+          .eq('student_id', user.id)  // Using student_id
           .eq('completed', true)
           .in('lesson_id', lessons?.map((l: any) => l.id) || []);
 
@@ -137,17 +119,17 @@ export default function StudentCertificationPage() {
         const completedLessonsCount = completedLessons?.length || 0;
         console.log(`  ✅ Completed lessons: ${completedLessonsCount}/${totalLessons}`);
 
-        // Get passed quiz attempts
+        // Get passed quiz attempts (using student_id)
         let passedQuizzesCount = 0;
         
         if (totalQuizzes > 0 && quizzes) {
           const quizIds = quizzes.map((q: any) => q.id);
           
-          // Get ALL quiz attempts for these quizzes
+          // Get ALL quiz attempts for these quizzes (using student_id)
           const { data: allAttempts, error: attemptsError } = await supabase
             .from('quiz_attempts')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('student_id', user.id)  // Changed from user_id to student_id
             .in('quiz_id', quizIds);
 
           if (attemptsError) {
@@ -192,10 +174,17 @@ export default function StudentCertificationPage() {
         console.log(`  ${isComplete ? '🎉 COURSE COMPLETE! Ready for certificate!' : '⏳ Course not complete yet'}`);
 
         if (isComplete) {
+          // Get instructor name from profiles
+          const { data: instructorProfile } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', course.instructor_id)
+            .single();
+
           eligible.push({
             courseId: course.id,
             courseTitle: course.title,
-            instructorName: course.users?.full_name || 'Instructor',
+            instructorName: instructorProfile?.name || 'Instructor',
             completedItems,
             totalItems,
             progress: 100
@@ -288,7 +277,7 @@ export default function StudentCertificationPage() {
                 key={course.courseId}
                 className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden"
               >
-                <div className="bg-linear-to-r from-blue-600 to-purple-600 p-6 text-white">
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
                   <Award className="w-12 h-12 mb-3" />
                   <h3 className="text-xl font-bold">{course.courseTitle}</h3>
                   <p className="text-blue-100 text-sm mt-1">
