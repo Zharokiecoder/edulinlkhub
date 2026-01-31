@@ -242,9 +242,9 @@ export default function QuizTakingPage() {
                       Question {index + 1}: {result.question}
                     </h3>
                     {result.isCorrect ? (
-                      <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 ml-2" />
+                      <CheckCircle className="w-6 h-6 text-green-600 shrink-0 ml-2" />
                     ) : (
-                      <XCircle className="w-6 h-6 text-red-600 flex-shrink-0 ml-2" />
+                      <XCircle className="w-6 h-6 text-red-600 shrink-0 ml-2" />
                     )}
                   </div>
                   <div className="space-y-2 text-sm">
