@@ -70,6 +70,7 @@ export default function QuizTakingPage() {
         return;
       }
 
+      console.log('QUIZZES LOADED:', quizData);
       setQuiz(quizData);
 
       if (quizData?.time_limit) {
@@ -126,6 +127,15 @@ export default function QuizTakingPage() {
     const score = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
     const passed = score >= (quiz?.passing_score || 70);
 
+    console.log('💾 Saving quiz attempt:', {
+      quiz_id: quizId,
+      student_id: user.id,
+      course_id: quiz.course_id,
+      score: score,
+      total_points: totalPoints,
+      passed: passed,
+    });
+
     const { error } = await supabase
       .from('quiz_attempts')
       .insert({
@@ -133,7 +143,6 @@ export default function QuizTakingPage() {
         student_id: user.id,
         course_id: quiz.course_id,
         score: score,
-        passing_score: quiz?.passing_score || 70,
         total_points: totalPoints,
         passed: passed,
         answers: answers,
@@ -142,7 +151,9 @@ export default function QuizTakingPage() {
       });
 
     if (error) {
-      console.error('Error saving attempt:', error);
+      console.error('❌ Error saving attempt:', error);
+    } else {
+      console.log('✅ Quiz attempt saved successfully!');
     }
 
     setResults({

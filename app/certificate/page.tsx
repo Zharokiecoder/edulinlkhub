@@ -14,43 +14,23 @@ function CertificateContent() {
   useEffect(() => {
     setMounted(true);
 
-    // Load html2canvas
     const html2canvasScript = document.createElement('script');
     html2canvasScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
     html2canvasScript.async = true;
-    html2canvasScript.onload = () => {
-      console.log('✅ html2canvas loaded');
-      setHtml2canvasLoaded(true);
-    };
-    html2canvasScript.onerror = () => {
-      console.error('❌ Failed to load html2canvas');
-    };
+    html2canvasScript.onload = () => setHtml2canvasLoaded(true);
     document.body.appendChild(html2canvasScript);
 
-    // Load jsPDF
     const jsPDFScript = document.createElement('script');
     jsPDFScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
     jsPDFScript.async = true;
-    jsPDFScript.onload = () => {
-      console.log('✅ jsPDF loaded');
-      setJsPDFLoaded(true);
-    };
-    jsPDFScript.onerror = () => {
-      console.error('❌ Failed to load jsPDF');
-    };
+    jsPDFScript.onload = () => setJsPDFLoaded(true);
     document.body.appendChild(jsPDFScript);
 
     return () => {
       try {
-        if (html2canvasScript.parentNode) {
-          document.body.removeChild(html2canvasScript);
-        }
-        if (jsPDFScript.parentNode) {
-          document.body.removeChild(jsPDFScript);
-        }
-      } catch (e) {
-        // Scripts already removed
-      }
+        if (html2canvasScript.parentNode) document.body.removeChild(html2canvasScript);
+        if (jsPDFScript.parentNode) document.body.removeChild(jsPDFScript);
+      } catch (e) {}
     };
   }, []);
 
@@ -58,7 +38,6 @@ function CertificateContent() {
 
   const student = searchParams.get('student') || 'Student Name';
   const course = searchParams.get('course') || 'Course Name';
-  const grade = searchParams.get('grade') || '100%';
   const instructor = searchParams.get('instructor') || 'Instructor';
   const date = searchParams.get('date') || new Date().toLocaleDateString();
   const certNumber = searchParams.get('number') || 'CERT-2024-001234';
@@ -74,40 +53,37 @@ function CertificateContent() {
       const { jsPDF } = window.jspdf;
       // @ts-ignore
       const html2canvas = window.html2canvas;
-      
+
       const certificate = document.getElementById('certificate');
       const controls = document.querySelector('.controls') as HTMLElement;
-      
+
       if (controls) controls.style.display = 'none';
-      
+
       const canvas = await html2canvas(certificate, {
         scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff'
       });
-      
+
       if (controls) controls.style.display = 'flex';
-      
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('landscape', 'mm', 'a4');
-      
+
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      
+
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`certificate-${certNumber}.pdf`);
-      
-      console.log('✅ PDF downloaded successfully');
     } catch (error) {
-      console.error('PDF Download Error:', error);
       alert('Failed to download PDF. Please try again.');
     }
   };
 
   const shareCertificate = () => {
     const url = window.location.href;
-    
+
     if (navigator.share) {
       navigator.share({
         title: 'My Course Completion Certificate',
@@ -185,7 +161,6 @@ function CertificateContent() {
           aspect-ratio: 297/210;
         }
 
-        /* Diagonal blue and gold stripes on left */
         .left-stripe {
           position: absolute;
           left: 0;
@@ -202,7 +177,6 @@ function CertificateContent() {
           clip-path: polygon(0 0, 100% 0, 65% 100%, 0 100%);
         }
 
-        /* Diagonal blue and gold stripes on right */
         .right-stripe {
           position: absolute;
           right: 0;
@@ -230,7 +204,6 @@ function CertificateContent() {
           min-height: 100%;
         }
 
-        /* Gold award badge */
         .award-badge {
           position: absolute;
           top: 80px;
@@ -279,7 +252,6 @@ function CertificateContent() {
           margin: 3px 0;
         }
 
-        /* Blue ribbons */
         .ribbon {
           position: absolute;
           bottom: -25px;
@@ -445,13 +417,9 @@ function CertificateContent() {
         </div>
 
         <div className="certificate" id="certificate">
-          {/* Left diagonal stripe */}
           <div className="left-stripe"></div>
-          
-          {/* Right diagonal stripe */}
           <div className="right-stripe"></div>
 
-          {/* Award Badge */}
           <div className="award-badge">
             <div className="badge-circle">
               <div className="badge-inner">
@@ -459,13 +427,11 @@ function CertificateContent() {
                 <div className="badge-text">BEST<br/>AWARD</div>
                 <div className="badge-stars">★ ★ ★</div>
               </div>
-              {/* Blue ribbons */}
               <div className="ribbon left"></div>
               <div className="ribbon right"></div>
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="cert-content">
             <h1 className="cert-title">CERTIFICATE</h1>
             <p className="cert-subtitle">OF APPRECIATION</p>
