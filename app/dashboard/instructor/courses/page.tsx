@@ -171,7 +171,7 @@ export default function MyCoursesPage() {
               className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow"
             >
               {/* Course Thumbnail */}
-              <div className="h-48 bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
+              <div className="h-48 bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center">
                 {course.thumbnail_url ? (
                   <img
                     src={course.thumbnail_url}

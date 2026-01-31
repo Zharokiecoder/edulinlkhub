@@ -172,7 +172,7 @@ export default function InstructorDashboardLayout({ children }: { children: Reac
           {/* Logo */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-linear-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
                 <Award className="text-white" size={20} />
               </div>
               <span className="text-xl font-bold text-gray-900">EduLink</span>
@@ -205,7 +205,7 @@ export default function InstructorDashboardLayout({ children }: { children: Reac
 
           {/* Get Pro Card */}
           <div className="p-4 border-t border-gray-200">
-            <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white">
+            <div className="bg-linear-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white">
               <h3 className="font-semibold mb-1">Upgrade to Pro</h3>
               <p className="text-xs text-white/80 mb-3">Get unlimited courses and advanced analytics</p>
               <button className="w-full px-3 py-2 bg-white text-teal-600 rounded-lg text-sm font-medium hover:bg-white/90 transition-colors">
@@ -285,7 +285,7 @@ export default function InstructorDashboardLayout({ children }: { children: Reac
                         className="rounded-full object-cover ring-2 ring-gray-200 group-hover:ring-teal-500 transition-all"
                       />
                     ) : (
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold ring-2 ring-gray-200 group-hover:ring-teal-500 transition-all text-sm sm:text-base">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-linear-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold ring-2 ring-gray-200 group-hover:ring-teal-500 transition-all text-sm sm:text-base">
                         {profile.name 
                           ? profile.name.charAt(0).toUpperCase() 
                           : user?.email?.charAt(0).toUpperCase() || 'I'
