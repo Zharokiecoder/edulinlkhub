@@ -45,6 +45,8 @@ export default function StudentCertificationPage() {
 
   async function loadData() {
     try {
+      console.log('🔍 Loading certification data...');
+      
       // Get current session instead of getUser() - more reliable
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
@@ -66,6 +68,7 @@ export default function StudentCertificationPage() {
       
       if (profile?.name) {
         setStudentName(profile.name);
+        console.log('✅ Student name:', profile.name);
       }
 
       // Load existing certificates
@@ -82,7 +85,10 @@ export default function StudentCertificationPage() {
         .eq('student_id', user.id)
         .order('issued_date', { ascending: false });
 
-      if (certs) setCertificates(certs);
+      if (certs) {
+        setCertificates(certs);
+        console.log('✅ Existing certificates:', certs.length);
+      }
 
       // Load enrolled courses to find completed ones
       const { data: enrollments } = await supabase
@@ -96,94 +102,129 @@ export default function StudentCertificationPage() {
         `)
         .eq('student_id', user.id);
 
-      if (enrollments) {
-        const completed: CompletedCourse[] = [];
+      if (!enrollments) {
+        console.log('❌ No enrollments found');
+        setLoading(false);
+        return;
+      }
 
-        for (const enrollment of enrollments) {
-          const course = enrollment.course as Course;
-          if (!course) continue;
+      console.log('✅ Total enrollments:', enrollments.length);
 
-          // Check if certificate already exists
-          const hasCertificate = certs?.some((cert: Certificate) => cert.course_id === course.id);
-          if (hasCertificate) continue;
+      const completed: CompletedCourse[] = [];
 
-          // Get all lessons and quizzes for this course
-          const { data: lessons } = await supabase
-            .from('lessons')
-            .select('id')
-            .eq('course_id', course.id);
+      for (const enrollment of enrollments) {
+        const course = enrollment.course as Course;
+        if (!course) continue;
 
-          const { data: quizzes } = await supabase
-            .from('quizzes')
-            .select('id')
-            .eq('course_id', course.id);
+        console.log(`\n📚 Checking course: ${course.title}`);
 
-          const totalLessons = lessons?.length || 0;
-          const totalQuizzes = quizzes?.length || 0;
-          const totalItems = totalLessons + totalQuizzes;
+        // Check if certificate already exists
+        const hasCertificate = certs?.some((cert: Certificate) => cert.course_id === course.id);
+        if (hasCertificate) {
+          console.log(`✅ Already has certificate for: ${course.title}`);
+          continue;
+        }
 
-          if (totalItems === 0) continue;
+        // Get all lessons for this course
+        const { data: lessons } = await supabase
+          .from('lessons')
+          .select('id')
+          .eq('course_id', course.id);
 
-          // Get completed lessons
+        // Get all quizzes for this course
+        const { data: quizzes } = await supabase
+          .from('quizzes')
+          .select('id')
+          .eq('course_id', course.id);
+
+        const totalLessons = lessons?.length || 0;
+        const totalQuizzes = quizzes?.length || 0;
+        const totalItems = totalLessons + totalQuizzes;
+
+        console.log(`  📊 Total items: ${totalItems} (${totalLessons} lessons + ${totalQuizzes} quizzes)`);
+
+        if (totalItems === 0) {
+          console.log('  ⚠️ No content in this course');
+          continue;
+        }
+
+        // Get completed lessons
+        let completedLessonsCount = 0;
+        if (lessons && lessons.length > 0) {
           const { data: completedLessons } = await supabase
             .from('lesson_progress')
             .select('lesson_id')
             .eq('student_id', user.id)
             .eq('completed', true)
-           .in('lesson_id', lessons?.map((l: any) => l.id) || []);
+            .in('lesson_id', lessons.map((l: any) => l.id));
 
-          // Get passed quizzes
-          let passedQuizzes: any[] = [];
-          if (quizzes && quizzes.length > 0) {
-            const { data, error: quizError } = await supabase
-              .from('quiz_attempts')
-              .select('quiz_id, score, passed')
-              .eq('student_id', user.id)
-              .eq('course_id', course.id)
-              .eq('passed', true);
+          completedLessonsCount = completedLessons?.length || 0;
+          console.log(`  ✅ Completed lessons: ${completedLessonsCount}/${totalLessons}`);
+        }
 
-            if (quizError) {
-              console.error(`Error fetching quiz attempts for course ${course.title}:`, quizError);
-            } else {
-              passedQuizzes = data || [];
-            }
-            console.log(`Quiz attempts for ${course.title}:`, passedQuizzes);
-          }
+        // Get passed quizzes - FIXED QUERY
+        let passedQuizzes: any[] = [];
+        let completedQuizzesCount = 0;
+        if (quizzes && quizzes.length > 0) {
+          const quizIds = quizzes.map((q: any) => q.id);
+          
+          // Get ALL quiz attempts for these quizzes
+          const { data: allAttempts, error: quizError } = await supabase
+            .from('quiz_attempts')
+            .select('quiz_id, score, passed')
+            .eq('student_id', user.id)
+            .in('quiz_id', quizIds);
 
-          const uniquePassedQuizzes = passedQuizzes?.reduce((acc, curr) => {
-            if (!acc.some((a: any) => a.quiz_id === curr.quiz_id)) {
-              acc.push(curr);
-            }
-            return acc;
-          }, [] as typeof passedQuizzes) || [];
-
-          const completedLessonsCount = completedLessons?.length || 0;
-          const completedQuizzesCount = uniquePassedQuizzes.length;
-          const completedItems = completedLessonsCount + completedQuizzesCount;
-
-          const progress = Math.round((completedItems / totalItems) * 100);
-
-          // Calculate average grade from all quiz attempts
-          const averageGrade = passedQuizzes && passedQuizzes.length > 0
-            ? Math.round(passedQuizzes.reduce((sum, q) => sum + q.score, 0) / passedQuizzes.length)
-            : 100;
-
-          // Course is 100% complete when ALL items are done
-          if (progress === 100) {
-            completed.push({
-              ...course,
-              totalItems,
-              completedItems,
-              progress,
-              averageGrade
-            });
+          if (quizError) {
+            console.error(`  ❌ Error fetching quiz attempts:`, quizError);
+          } else {
+            console.log(`  📝 All quiz attempts:`, allAttempts);
+            
+            // Filter for passed attempts
+            passedQuizzes = (allAttempts || []).filter((attempt: any) => attempt.passed === true);
+            
+            // Get unique passed quizzes
+            const uniquePassedQuizIds = new Set(passedQuizzes.map((q: any) => q.quiz_id));
+            completedQuizzesCount = uniquePassedQuizIds.size;
+            
+            console.log(`  ✅ Passed quizzes: ${completedQuizzesCount}/${totalQuizzes}`);
+            console.log(`  📊 Passed quiz IDs:`, Array.from(uniquePassedQuizIds));
           }
         }
 
-        setCompletedCourses(completed);
+        const completedItems = completedLessonsCount + completedQuizzesCount;
+        const progress = Math.round((completedItems / totalItems) * 100);
+
+        console.log(`  📊 Progress: ${completedItems}/${totalItems} = ${progress}%`);
+
+        // Calculate average grade from passed quiz attempts
+        let averageGrade = 100;
+        if (passedQuizzes && passedQuizzes.length > 0) {
+          const totalScore = passedQuizzes.reduce((sum, q) => sum + q.score, 0);
+          averageGrade = Math.round(totalScore / passedQuizzes.length);
+          console.log(`  📊 Average grade: ${averageGrade}%`);
+        }
+
+        // Course is 100% complete when ALL items are done
+        if (progress === 100) {
+          console.log(`  🎉 COURSE COMPLETE! Ready for certificate!`);
+          completed.push({
+            ...course,
+            totalItems,
+            completedItems,
+            progress,
+            averageGrade
+          });
+        } else {
+          console.log(`  ⏳ Not yet complete (${progress}%)`);
+        }
       }
+
+      console.log(`\n✅ Total courses ready for certificate: ${completed.length}`);
+      setCompletedCourses(completed);
+      
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('❌ Error loading data:', error);
     } finally {
       setLoading(false);
     }
@@ -201,6 +242,8 @@ export default function StudentCertificationPage() {
       // Generate unique certificate number
       const certNumber = `CERT-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
 
+      console.log('🎓 Generating certificate:', certNumber);
+
       // Create certificate
       const { error } = await supabase
         .from('certificates')
@@ -214,10 +257,12 @@ export default function StudentCertificationPage() {
         });
 
       if (error) {
-        console.error('Error creating certificate:', error);
+        console.error('❌ Error creating certificate:', error);
         alert('Failed to generate certificate. Please try again.');
         return;
       }
+
+      console.log('✅ Certificate created successfully!');
 
       // Open certificate in new tab
       const certUrl = `/certificate?student=${encodeURIComponent(studentName)}&course=${encodeURIComponent(course.title)}&grade=${course.averageGrade}%&instructor=${encodeURIComponent(course.instructor?.name || 'Instructor')}&date=${encodeURIComponent(new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))}&number=${certNumber}`;
@@ -227,7 +272,7 @@ export default function StudentCertificationPage() {
       // Reload data
       await loadData();
     } catch (error) {
-      console.error('Error generating certificate:', error);
+      console.error('❌ Error generating certificate:', error);
       alert('Failed to generate certificate. Please try again.');
     } finally {
       setGenerating(null);
@@ -311,7 +356,7 @@ export default function StudentCertificationPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">🎉 Ready to Claim Certificate</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {completedCourses.map(course => (
-                <div key={course.id} className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 p-6 rounded-lg">
+                <div key={course.id} className="bg-linear-to-r from-green-50 to-emerald-50 border-2 border-green-200 p-6 rounded-lg">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900 mb-1">{course.title}</h3>
@@ -321,8 +366,11 @@ export default function StudentCertificationPage() {
                       <p className="text-sm text-green-600 font-semibold mt-2">
                         ✅ Course Completed - Grade: {course.averageGrade}%
                       </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Completed: {course.completedItems}/{course.totalItems} items
+                      </p>
                     </div>
-                    <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+                    <CheckCircle className="w-6 h-6 text-green-600 shrink-0" />
                   </div>
                   
                   <button
@@ -373,7 +421,7 @@ export default function StudentCertificationPage() {
                           Grade: {cert.grade}%
                         </p>
                       </div>
-                      <Award className="w-6 h-6 text-purple-600 flex-shrink-0" />
+                      <Award className="w-6 h-6 text-purple-600 shrink-0" />
                     </div>
 
                     <div className="bg-gray-50 p-3 rounded mb-4">
