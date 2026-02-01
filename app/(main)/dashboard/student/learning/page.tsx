@@ -3,22 +3,42 @@
 import React, { useState, useEffect } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Clock, Play, CheckCircle2, TrendingUp, FileText } from 'lucide-react';
+import { BookOpen, Clock, Play, CheckCircle2, TrendingUp, FileText, Award, Star, X } from 'lucide-react';
 
 export default function StudentLearningPage() {
   const router = useRouter();
-  const supabase = getSupabaseClient(); // ✅ Use shared client instead of creating new one
+  const supabase = getSupabaseClient();
 
   const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCongratulatoryModal, setShowCongratulatoryModal] = useState(false);
+  const [completedCourse, setCompletedCourse] = useState<any>(null);
 
   useEffect(() => {
     fetchEnrolledCourses();
   }, []);
 
+  useEffect(() => {
+    const checkForCompletion = () => {
+      const recentlyCompleted = enrolledCourses.find(course => {
+        const wasJustCompleted = localStorage.getItem(`course_${course.id}_just_completed`);
+        return course.progress === 100 && wasJustCompleted === 'true';
+      });
+
+      if (recentlyCompleted) {
+        setCompletedCourse(recentlyCompleted);
+        setShowCongratulatoryModal(true);
+        localStorage.removeItem(`course_${recentlyCompleted.id}_just_completed`);
+      }
+    };
+
+    if (enrolledCourses.length > 0) {
+      checkForCompletion();
+    }
+  }, [enrolledCourses]);
+
   const fetchEnrolledCourses = async () => {
     try {
-      // ✅ Use getSession() instead of getUser() - more reliable
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !session) {
@@ -29,7 +49,6 @@ export default function StudentLearningPage() {
 
       const user = session.user;
 
-      // Get enrollments with course data
       const { data: enrollments, error: enrollError } = await supabase
         .from('enrollments')
         .select(`
@@ -49,13 +68,12 @@ export default function StudentLearningPage() {
         return;
       }
 
-      // Get lesson counts and progress for each course
       const coursesWithProgress = await Promise.all(
         enrollments.map(async (enrollment: any) => {
           const course = enrollment.courses;
           
           // Get total lessons
-          const { data: lessons, count: totalLessons } = await supabase
+          const { count: totalLessons } = await supabase
             .from('lessons')
             .select('id', { count: 'exact' })
             .eq('course_id', course.id);
@@ -74,13 +92,28 @@ export default function StudentLearningPage() {
             .select('id', { count: 'exact' })
             .eq('course_id', course.id);
 
-          const progress = totalLessons ? Math.round(((completedLessons || 0) / totalLessons) * 100) : 0;
+          // Get unique passed quizzes (count each quiz only once)
+          const { data: quizAttempts } = await supabase
+            .from('quiz_attempts')
+            .select('quiz_id')
+            .eq('student_id', user.id)
+            .eq('course_id', course.id)
+            .eq('passed', true);
+
+          const uniquePassedQuizzes = new Set(quizAttempts?.map((attempt: { quiz_id: any; }) => attempt.quiz_id) || []);
+          const completedQuizzes = uniquePassedQuizzes.size;
+
+          // Calculate progress
+          const totalItems = (totalLessons || 0) + (totalQuizzes || 0);
+          const completedItems = (completedLessons || 0) + completedQuizzes;
+          const progress = totalItems > 0 ? Math.min(100, Math.round((completedItems / totalItems) * 100)) : 0;
 
           return {
             ...course,
             totalLessons: totalLessons || 0,
             completedLessons: completedLessons || 0,
             totalQuizzes: totalQuizzes || 0,
+            completedQuizzes: completedQuizzes,
             progress,
             enrolledAt: enrollment.enrolled_at,
           };
@@ -93,6 +126,11 @@ export default function StudentLearningPage() {
       console.error('Error:', error);
       setLoading(false);
     }
+  };
+
+  const closeCongratulatoryModal = () => {
+    setShowCongratulatoryModal(false);
+    setCompletedCourse(null);
   };
 
   if (loading) {
@@ -108,6 +146,80 @@ export default function StudentLearningPage() {
 
   return (
     <div className="p-6">
+      {/* Congratulatory Modal */}
+      {showCongratulatoryModal && completedCourse && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 relative animate-bounce-in">
+            <button
+              onClick={closeCongratulatoryModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition"
+            >
+              <X size={24} />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-24 h-24 bg-linear-to-br from-yellow-400 to-orange-500 rounded-full mb-4 animate-pulse">
+                <Award className="w-12 h-12 text-white" />
+              </div>
+              <div className="flex justify-center gap-2 mb-4">
+                <Star className="w-6 h-6 text-yellow-400 fill-yellow-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <Star className="w-8 h-8 text-yellow-400 fill-yellow-400 animate-bounce" style={{ animationDelay: '100ms' }} />
+                <Star className="w-6 h-6 text-yellow-400 fill-yellow-400 animate-bounce" style={{ animationDelay: '200ms' }} />
+              </div>
+            </div>
+
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                🎉 Congratulations! 🎉
+              </h2>
+              <p className="text-gray-600 text-lg mb-4">
+                You've successfully completed
+              </p>
+              <p className="text-xl font-semibold text-blue-600 mb-4">
+                {completedCourse.title}
+              </p>
+              <p className="text-gray-600">
+                You've finished all {completedCourse.totalLessons} lessons and {completedCourse.totalQuizzes} {completedCourse.totalQuizzes === 1 ? 'quiz' : 'quizzes'}!
+              </p>
+            </div>
+
+            <div className="bg-linear-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <p className="text-2xl font-bold text-blue-600">{completedCourse.totalLessons}</p>
+                  <p className="text-sm text-gray-600">Lessons Completed</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-purple-600">{completedCourse.totalQuizzes}</p>
+                  <p className="text-sm text-gray-600">Quizzes Passed</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  closeCongratulatoryModal();
+                  router.push(`/dashboard/student/certification`);
+                }}
+                className="w-full bg-linear-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg hover:shadow-lg transition font-semibold"
+              >
+                Get Your Certificate
+              </button>
+              <button
+                onClick={() => {
+                  closeCongratulatoryModal();
+                  router.push('/courses');
+                }}
+                className="w-full border-2 border-blue-600 text-blue-600 py-3 rounded-lg hover:bg-blue-50 transition font-semibold"
+              >
+                Explore More Courses
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">My Learning</h1>
         <p className="text-gray-600">Continue your learning journey</p>
@@ -133,7 +245,6 @@ export default function StudentLearningPage() {
               className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition cursor-pointer group"
               onClick={() => router.push(`/courses/${course.id}/watch`)}
             >
-              {/* Thumbnail */}
               {course.thumbnail_url ? (
                 <img
                   src={course.thumbnail_url}
@@ -141,12 +252,11 @@ export default function StudentLearningPage() {
                   className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
                 />
               ) : (
-                <div className="w-full h-48 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <div className="w-full h-48 bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                   <BookOpen className="w-16 h-16 text-white/50" />
                 </div>
               )}
 
-              {/* Content */}
               <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-2 line-clamp-2">
                   {course.title}
@@ -155,7 +265,6 @@ export default function StudentLearningPage() {
                   {course.description}
                 </p>
 
-                {/* Progress Bar */}
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-gray-600">Progress</span>
@@ -163,13 +272,12 @@ export default function StudentLearningPage() {
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
-                      className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all"
+                      className="bg-linear-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all"
                       style={{ width: `${course.progress}%` }}
                     />
                   </div>
                 </div>
 
-                {/* Stats */}
                 <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
                   <span className="flex items-center">
                     <CheckCircle2 className="w-4 h-4 mr-1" />
@@ -178,12 +286,11 @@ export default function StudentLearningPage() {
                   {course.totalQuizzes > 0 && (
                     <span className="flex items-center text-purple-600">
                       <FileText className="w-4 h-4 mr-1" />
-                      {course.totalQuizzes} {course.totalQuizzes === 1 ? 'quiz' : 'quizzes'}
+                      {course.completedQuizzes}/{course.totalQuizzes} {course.totalQuizzes === 1 ? 'quiz' : 'quizzes'}
                     </span>
                   )}
                 </div>
 
-                {/* Status Badge */}
                 {course.progress === 100 && (
                   <div className="mb-4">
                     <span className="inline-flex items-center bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">
@@ -193,7 +300,6 @@ export default function StudentLearningPage() {
                   </div>
                 )}
 
-                {/* Continue Button */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -210,7 +316,6 @@ export default function StudentLearningPage() {
         </div>
       )}
 
-      {/* Stats Summary */}
       {enrolledCourses.length > 0 && (
         <div className="mt-8 grid md:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-lg p-6">
@@ -248,6 +353,28 @@ export default function StudentLearningPage() {
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes bounce-in {
+          0% {
+            transform: scale(0.3);
+            opacity: 0;
+          }
+          50% {
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-bounce-in {
+          animation: bounce-in 0.6s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getSupabaseClient } from '@/lib/supabase';
-import { Search, Filter, Star, MapPin, Globe, MessageSquare } from 'lucide-react';
+import { Search, Filter, Star, MapPin, Globe, MessageSquare, BookOpen } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -86,6 +86,11 @@ export default function StudentTutorsPage() {
     router.push(`/dashboard/student/messages?instructorId=${tutorId}`);
   };
 
+  const handleBookLesson = (tutorId: string) => {
+    // Navigate to courses page filtered by this tutor's courses
+    router.push(`/courses?instructorId=${tutorId}`);
+  };
+
   const filteredTutors = tutors.filter(tutor => {
     const matchesSearch = tutor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          tutor.bio.toLowerCase().includes(searchQuery.toLowerCase());
@@ -161,7 +166,7 @@ export default function StudentTutorsPage() {
                     className="rounded-full mb-3 object-cover"
                   />
                 ) : (
-                  <div className="w-20 h-20 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-3">
+                  <div className="w-20 h-20 bg-linear-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-3">
                     {tutor.name.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -210,11 +215,18 @@ export default function StudentTutorsPage() {
               {/* Action Buttons */}
               <div className="flex gap-2">
                 <button 
+                  onClick={() => handleBookLesson(tutor.id)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-linear-to-br from-cyan-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all"
+                >
+                  <BookOpen size={16} />
+                  <span className="text-sm font-medium">Book Lesson</span>
+                </button>
+                <button 
                   onClick={() => handleSendMessage(tutor.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-br from-cyan-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border-2 border-cyan-500 text-cyan-600 rounded-lg hover:bg-cyan-50 transition-all"
                 >
                   <MessageSquare size={16} />
-                  <span className="text-sm font-medium">Send Message</span>
+                  <span className="text-sm font-medium">Message</span>
                 </button>
               </div>
             </div>

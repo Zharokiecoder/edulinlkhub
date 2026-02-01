@@ -21,6 +21,19 @@ export default function StudentDashboard() {
   const [activities, setActivities] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
 
+  // ✅ Form filter state
+  const [filterSubject, setFilterSubject] = useState('');
+  const [filterPrice, setFilterPrice] = useState('');
+  const [filterCountry, setFilterCountry] = useState('');
+  const [filterAvailability, setFilterAvailability] = useState('');
+  const [filterSpeciality, setFilterSpeciality] = useState('');
+  const [filterLanguage, setFilterLanguage] = useState('');
+  const [filterNativeSpeaker, setFilterNativeSpeaker] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [isFiltered, setIsFiltered] = useState(false);
+  const [courseOptions, setCourseOptions] = useState<{ title: string; instructor_id: string }[]>([]);
+
   // Available time slots
   const timeSlots = [
     '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
@@ -36,7 +49,6 @@ export default function StudentDashboard() {
     try {
       setLoading(true);
       
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -58,14 +70,13 @@ export default function StudentDashboard() {
       }
 
       if (!profileData) {
-        console.log('Profile not found, redirecting to setup...');
         router.push('/auth/complete-signup');
         return;
       }
 
       setProfile(profileData);
 
-      // Fetch appointments - WITH DEBUGGING
+      // Fetch appointments
       const { data: appointmentsData, error: appointmentsError } = await supabase
         .from('appointments')
         .select('*')
@@ -73,12 +84,7 @@ export default function StudentDashboard() {
         .order('date', { ascending: true });
 
       if (!appointmentsError) {
-        console.log('✅ Loaded appointments from DB:', appointmentsData);
-        console.log('Number of appointments:', appointmentsData?.length);
         setAppointments(appointmentsData || []);
-      } else {
-        console.error('❌ Error fetching appointments:', appointmentsError);
-        setAppointments([]);
       }
 
       // Fetch enrolled courses
@@ -98,30 +104,12 @@ export default function StudentDashboard() {
         setEnrolledCourses(enrollmentsData || []);
       }
 
-      // Fetch featured tutors
-      const { data: tutorsData, error: tutorsError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'educator')
-        .limit(5);
-
-      if (!tutorsError && tutorsData) {
-        const tutorsWithCourses = await Promise.all(
-          tutorsData.map(async (tutor: any) => {
-            const { count } = await supabase
-              .from('courses')
-              .select('*', { count: 'exact', head: true })
-              .eq('instructor_id', tutor.id)
-              .eq('status', 'active');
-            
-            return {
-              ...tutor,
-              coursesCount: count || 0
-            };
-          })
-        );
-        
-        setFeaturedTutors(tutorsWithCourses);
+      // Fetch all courses to populate dropdown
+      const { data: allCourses } = await supabase
+        .from('courses')
+        .select('title, instructor_id');
+      if (allCourses) {
+        setCourseOptions(allCourses);
       }
 
       // Fetch recent activities
@@ -141,6 +129,89 @@ export default function StudentDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // ✅ Fetches tutors - filters by course subject via the courses table
+  const fetchTutors = async (applyFilters: boolean = false) => {
+    try {
+      let tutorsData: any[] = [];
+
+      if (applyFilters && filterSubject) {
+        // filterSubject is now an exact course title — find its instructor directly
+        const matchedCourse = courseOptions.find(c => c.title === filterSubject);
+
+        if (!matchedCourse) {
+          setFeaturedTutors([]);
+          return;
+        }
+
+        // Fetch the instructor for that course
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', matchedCourse.instructor_id);
+
+        tutorsData = data || [];
+      } else {
+        // No subject filter — fetch all educators
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('role', 'educator')
+          .limit(5);
+
+        tutorsData = data || [];
+      }
+
+      // Filter by keyword in JS (name or bio match)
+      if (applyFilters && searchKeyword.trim()) {
+        const kw = searchKeyword.trim().toLowerCase();
+        tutorsData = tutorsData.filter((t: any) =>
+          t.name?.toLowerCase().includes(kw) ||
+          t.bio?.toLowerCase().includes(kw)
+        );
+      }
+
+      // Attach course count to each tutor
+      const tutorsWithCourses = await Promise.all(
+        tutorsData.map(async (tutor: any) => {
+          const { count } = await supabase
+            .from('courses')
+            .select('*', { count: 'exact', head: true })
+            .eq('instructor_id', tutor.id);
+
+          return {
+            ...tutor,
+            coursesCount: count || 0
+          };
+        })
+      );
+
+      setFeaturedTutors(tutorsWithCourses);
+    } catch (error) {
+      console.error('Error fetching tutors:', error);
+    }
+  };
+
+  // ✅ Called when "Personalize my result" is clicked
+  const handlePersonalize = async () => {
+    setIsFiltered(true);
+    await fetchTutors(true);
+  };
+
+  // ✅ Resets all filters and reloads tutors
+  const handleClearFilters = async () => {
+    setFilterSubject('');
+    setFilterPrice('');
+    setFilterCountry('');
+    setFilterAvailability('');
+    setFilterSpeciality('');
+    setFilterLanguage('');
+    setFilterNativeSpeaker('');
+    setFilterCategory('');
+    setSearchKeyword('');
+    setIsFiltered(false);
+    await fetchTutors(false);
   };
 
   // Calendar functions
@@ -170,7 +241,6 @@ export default function StudentDashboard() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Only allow selecting future dates
     if (selected >= today) {
       setSelectedDate(selected);
       setShowAppointmentModal(true);
@@ -203,23 +273,14 @@ export default function StudentDashboard() {
   };
 
   const hasAppointment = (day: number) => {
-    const result = appointments.some((apt: any) => {
-      // Parse the date string properly - add T00:00:00 to ensure correct timezone
+    return appointments.some((apt: any) => {
       const aptDate = new Date(apt.date + 'T00:00:00');
-      const isMatch = (
+      return (
         aptDate.getDate() === day &&
         aptDate.getMonth() === month &&
         aptDate.getFullYear() === year
       );
-      
-      if (isMatch) {
-        console.log('✅ Found appointment for day', day, ':', apt);
-      }
-      
-      return isMatch;
     });
-    
-    return result;
   };
 
   const handleBookAppointment = async () => {
@@ -232,12 +293,8 @@ export default function StudentDashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Format date as YYYY-MM-DD for database
       const dateString = selectedDate.toISOString().split('T')[0];
 
-      console.log('📅 Booking appointment for:', dateString, 'at', selectedTime);
-
-      // Save appointment to database
       const { data: newAppointment, error: appointmentError } = await supabase
         .from('appointments')
         .insert({
@@ -250,17 +307,12 @@ export default function StudentDashboard() {
         .single();
 
       if (appointmentError) {
-        console.error('❌ Error creating appointment:', appointmentError);
         alert('Failed to book appointment. Please try again.');
         return;
       }
 
-      console.log('✅ Appointment created successfully:', newAppointment);
-
-      // Add to local state immediately
       setAppointments([...appointments, newAppointment]);
       
-      // Add activity
       await supabase.from('activities').insert({
         user_id: user.id,
         title: 'Appointment Scheduled',
@@ -272,7 +324,6 @@ export default function StudentDashboard() {
       setSelectedTime('');
       alert('Appointment booked successfully! ✅');
       
-      // Refresh dashboard data
       await fetchDashboardData();
     } catch (error) {
       console.error('Error booking appointment:', error);
@@ -327,28 +378,42 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="block text-left text-xs text-gray-600 mb-1">I want to Learn</label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option>Computer</option>
-                  <option>Mathematics</option>
-                  <option>English</option>
-                  <option>Science</option>
+                <select
+                  value={filterSubject}
+                  onChange={(e) => setFilterSubject(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="">Select Course</option>
+                  {courseOptions.map((course, i) => (
+                    <option key={i} value={course.title}>{course.title}</option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="block text-left text-xs text-gray-600 mb-1">Price per lesson</label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option>$20 - $50</option>
-                  <option>$50 - $100</option>
-                  <option>$100+</option>
+                <select
+                  value={filterPrice}
+                  onChange={(e) => setFilterPrice(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="">Select Price</option>
+                  <option value="$20 - $50">$20 - $50</option>
+                  <option value="$50 - $100">$50 - $100</option>
+                  <option value="$100+">$100+</option>
                 </select>
               </div>
               <div>
                 <label className="block text-left text-xs text-gray-600 mb-1">Country</label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option>USA</option>
-                  <option>UK</option>
-                  <option>Nigeria</option>
-                  <option>Canada</option>
+                <select
+                  value={filterCountry}
+                  onChange={(e) => setFilterCountry(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="">Select Country</option>
+                  <option value="USA">USA</option>
+                  <option value="UK">UK</option>
+                  <option value="Nigeria">Nigeria</option>
+                  <option value="Canada">Canada</option>
                 </select>
               </div>
             </div>
@@ -356,26 +421,38 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="block text-left text-xs text-gray-600 mb-1">I'm Available</label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option>Any time</option>
-                  <option>Morning</option>
-                  <option>Afternoon</option>
-                  <option>Evening</option>
+                <select
+                  value={filterAvailability}
+                  onChange={(e) => setFilterAvailability(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="">Select Availability</option>
+                  <option value="Any time">Any time</option>
+                  <option value="Morning">Morning</option>
+                  <option value="Afternoon">Afternoon</option>
+                  <option value="Evening">Evening</option>
                 </select>
               </div>
               <div className="flex items-end">
-                <button className="w-full py-2 bg-teal-700 text-white rounded-lg font-medium hover:bg-teal-800 transition-colors flex items-center justify-center gap-2">
+                <button
+                  onClick={handlePersonalize}
+                  className="w-full py-2 bg-teal-700 text-white rounded-lg font-medium hover:bg-teal-800 transition-colors flex items-center justify-center gap-2"
+                >
                   <span>✓</span>
-                  Personalized my result
+                  Personalize my result
                 </button>
               </div>
               <div>
                 <label className="block text-left text-xs text-gray-600 mb-1">Specialities</label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option>Select</option>
-                  <option>Beginner</option>
-                  <option>Intermediate</option>
-                  <option>Advanced</option>
+                <select
+                  value={filterSpeciality}
+                  onChange={(e) => setFilterSpeciality(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="">Select</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
                 </select>
               </div>
             </div>
@@ -383,27 +460,39 @@ export default function StudentDashboard() {
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div>
                 <label className="block text-left text-xs text-gray-600 mb-1">Also speaks</label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option>Select</option>
-                  <option>English</option>
-                  <option>Spanish</option>
-                  <option>French</option>
+                <select
+                  value={filterLanguage}
+                  onChange={(e) => setFilterLanguage(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="">Select</option>
+                  <option value="English">English</option>
+                  <option value="Spanish">Spanish</option>
+                  <option value="French">French</option>
                 </select>
               </div>
               <div>
                 <label className="block text-left text-xs text-gray-600 mb-1">Native Speaker</label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option>Select</option>
-                  <option>Yes</option>
-                  <option>No</option>
+                <select
+                  value={filterNativeSpeaker}
+                  onChange={(e) => setFilterNativeSpeaker(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="">Select</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
                 </select>
               </div>
               <div>
                 <label className="block text-left text-xs text-gray-600 mb-1">Tutor categories</label>
-                <select className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option>Select</option>
-                  <option>Professional</option>
-                  <option>Community</option>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="">Select</option>
+                  <option value="Professional">Professional</option>
+                  <option value="Community">Community</option>
                 </select>
               </div>
             </div>
@@ -413,6 +502,8 @@ export default function StudentDashboard() {
               <input
                 type="text"
                 placeholder="Search Key Words"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
                 className="bg-transparent outline-none text-sm w-full"
               />
             </div>
@@ -421,8 +512,20 @@ export default function StudentDashboard() {
 
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-900">Featured Tutors</h3>
-            <Link href="/dashboard/student/tutors" className="text-sm text-gray-600 hover:text-gray-900">See all</Link>
+            <h3 className="text-xl font-bold text-gray-900">
+              {isFiltered ? 'Personalized Tutors' : 'Featured Tutors'}
+            </h3>
+            <div className="flex items-center gap-3">
+              {isFiltered && (
+                <button
+                  onClick={handleClearFilters}
+                  className="text-sm text-red-500 hover:text-red-700 font-medium"
+                >
+                  Clear Filters
+                </button>
+              )}
+              <Link href="/dashboard/student/tutors" className="text-sm text-gray-600 hover:text-gray-900">See all</Link>
+            </div>
           </div>
 
           {featuredTutors.length > 0 ? (
@@ -475,7 +578,17 @@ export default function StudentDashboard() {
           ) : (
             <div className="text-center py-12">
               <Users size={48} className="mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500">No tutors available yet</p>
+              <p className="text-gray-500">
+                {isFiltered ? 'No tutors match your criteria. Try adjusting your filters.' : 'Select a course above and click "Personalize my result" to find tutors'}
+              </p>
+              {isFiltered && (
+                <button
+                  onClick={handleClearFilters}
+                  className="mt-3 text-sm text-cyan-600 hover:text-cyan-800 font-medium"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -542,12 +655,10 @@ export default function StudentDashboard() {
 
           {/* Calendar days */}
           <div className="grid grid-cols-7 gap-2">
-            {/* Empty cells for days before month starts */}
             {[...Array(startingDayOfWeek)].map((_, i) => (
               <div key={`empty-${i}`} className="aspect-square"></div>
             ))}
             
-            {/* Actual days */}
             {[...Array(daysInMonth)].map((_, i) => {
               const day = i + 1;
               const past = isPastDate(day);
