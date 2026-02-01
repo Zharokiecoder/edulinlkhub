@@ -265,7 +265,7 @@ export default function CourseDetailPage() {
               className="w-full h-64 object-cover"
             />
           ) : (
-            <div className="w-full h-64 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+            <div className="w-full h-64 bg-linear-to-r from-blue-500 to-purple-600 flex items-center justify-center">
               <span className="text-white text-6xl">📚</span>
             </div>
           )}

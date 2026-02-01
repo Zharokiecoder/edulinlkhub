@@ -59,8 +59,34 @@ function LoginForm() {
       if (error) throw error;
 
       if (data.user) {
-        // Successfully logged in - redirect to dashboard
-        router.push('/dashboard');
+        // Fetch user profile to check role
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          // If profile doesn't exist or error, default to dashboard
+          router.push('/dashboard');
+          return;
+        }
+
+        // Redirect based on role
+        switch (profile.role) {
+          case 'admin':
+            router.push('/admin');
+            break;
+          case 'educator':
+            router.push('/dashboard/instructor');
+            break;
+          case 'student':
+            router.push('/dashboard/student');
+            break;
+          default:
+            router.push('/dashboard');
+        }
       }
     } catch (err: unknown) {
       console.error('Login error:', err);

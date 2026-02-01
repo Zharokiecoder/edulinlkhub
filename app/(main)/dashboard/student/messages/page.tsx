@@ -449,11 +449,11 @@ export default function StudentMessagesPage() {
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="relative flex-shrink-0">
+                      <div className="relative shrink-0">
                         {conv.participant.avatar_url ? (
                           <Image src={conv.participant.avatar_url} alt={conv.participant.name} width={48} height={48} className="rounded-full object-cover" />
                         ) : (
-                          <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          <div className="w-12 h-12 bg-linear-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                             {conv.participant.name?.charAt(0).toUpperCase() || 'U'}
                           </div>
                         )}
@@ -468,7 +468,7 @@ export default function StudentMessagesPage() {
                         </div>
                         <p className="text-sm text-gray-600 truncate">{conv.lastMessage}</p>
                         {conv.unread > 0 && (
-                          <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-cyan-600 text-white text-xs font-medium rounded-full mt-1">
+                          <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-cyan-600 text-white text-xs font-medium rounded-full mt-1">
                             {conv.unread}
                           </span>
                         )}
@@ -499,7 +499,7 @@ export default function StudentMessagesPage() {
                       {selectedConversation.participant.avatar_url ? (
                         <Image src={selectedConversation.participant.avatar_url} alt={selectedConversation.participant.name} width={40} height={40} className="rounded-full object-cover" />
                       ) : (
-                        <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold">
+                        <div className="w-10 h-10 bg-linear-to-br from-cyan-400 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold">
                           {selectedConversation.participant.name?.charAt(0).toUpperCase() || 'U'}
                         </div>
                       )}
@@ -530,10 +530,10 @@ export default function StudentMessagesPage() {
                     <div key={message.id} className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] sm:max-w-md px-4 py-3 rounded-2xl ${
                         message.sender_id === currentUserId
-                          ? 'bg-gradient-to-br from-cyan-500 to-cyan-600 text-white'
+                          ? 'bg-linear-to-br from-cyan-500 to-cyan-600 text-white'
                           : 'bg-white border border-gray-200 text-gray-900'
                       }`}>
-                        <p className="text-sm break-words">{message.content}</p>
+                        <p className="text-sm wrap-break-word">{message.content}</p>
                         <div className={`flex items-center justify-end gap-1 text-xs mt-1 ${
                           message.sender_id === currentUserId ? 'text-cyan-100' : 'text-gray-500'
                         }`}>
@@ -551,13 +551,13 @@ export default function StudentMessagesPage() {
 
               <div className="p-4 border-t border-gray-200 bg-white">
                 <div className="flex items-end gap-2">
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
+                  <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
                     <Paperclip size={20} className="text-gray-600" />
                   </button>
-                  <button className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
+                  <button className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
                     <ImageIcon size={20} className="text-gray-600" />
                   </button>
-                  <button className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
+                  <button className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
                     <Smile size={20} className="text-gray-600" />
                   </button>
                   <div className="flex-1">
@@ -573,7 +573,7 @@ export default function StudentMessagesPage() {
                   <button
                     onClick={handleSendMessage}
                     disabled={!messageInput.trim()}
-                    className="p-3 bg-gradient-to-br from-cyan-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    className="p-3 bg-linear-to-br from-cyan-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   >
                     <Send size={20} />
                   </button>

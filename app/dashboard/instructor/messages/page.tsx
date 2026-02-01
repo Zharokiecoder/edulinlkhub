@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient } from '@/lib/supabase';
 import { Search, Send, Paperclip, MoreVertical, Phone, Video, ImageIcon, Smile, Check, CheckCheck } from 'lucide-react';
 import Image from 'next/image';
 
@@ -32,10 +32,8 @@ interface Message {
 }
 
 export default function InstructorMessagesPage() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // ✅ FIXED: use shared client instead of creating a new one every render
+  const supabase = getSupabaseClient();
   
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -61,7 +59,7 @@ export default function InstructorMessagesPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Subscribe to real-time messages for ALL conversations
+  // Subscribe to real-time messages
   useEffect(() => {
     if (!currentUserId) return;
 
@@ -77,23 +75,18 @@ export default function InstructorMessagesPage() {
         (payload: any) => {
           const newMessage = payload.new as Message;
           
-          // Only add message if user is sender or receiver
           if (newMessage.sender_id === currentUserId || newMessage.receiver_id === currentUserId) {
-            // Update messages if it's for the selected conversation
             if (selectedConversation && newMessage.conversation_id === selectedConversation.id) {
               setMessages(prev => {
-                // Avoid duplicates
                 if (prev.find(m => m.id === newMessage.id)) return prev;
                 return [...prev, newMessage];
               });
               
-              // Mark as read if we're the receiver
               if (newMessage.receiver_id === currentUserId) {
                 markMessageAsRead(newMessage.id);
               }
             }
             
-            // Refresh conversations to update last message
             fetchConversations(currentUserId);
           }
         }
@@ -206,7 +199,6 @@ export default function InstructorMessagesPage() {
         if (enrollments && enrollments.length > 0) {
           const studentIds = new Set<string>();
           enrollments.forEach((e: any) => {
-            // Handle both array and object cases for students
             const student = Array.isArray(e.students) ? e.students[0] : e.students;
             if (student?.id) {
               studentIds.add(student.id);
@@ -302,7 +294,6 @@ export default function InstructorMessagesPage() {
       created_at: new Date().toISOString(),
     };
 
-    // Optimistically add message to UI
     setMessages(prev => [...prev, tempMessage]);
     setMessageInput('');
 
@@ -321,12 +312,10 @@ export default function InstructorMessagesPage() {
 
       if (error) throw error;
 
-      // Replace temp message with real one
       setMessages(prev => 
         prev.map(msg => msg.id === tempMessage.id ? data : msg)
       );
 
-      // Update conversation
       await supabase
         .from('conversations')
         .update({
@@ -338,7 +327,6 @@ export default function InstructorMessagesPage() {
       await fetchConversations(currentUserId);
     } catch (error) {
       console.error('Error sending message:', error);
-      // Remove temp message on error
       setMessages(prev => prev.filter(msg => msg.id !== tempMessage.id));
       alert('Failed to send message');
     }
@@ -409,11 +397,11 @@ export default function InstructorMessagesPage() {
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="relative flex-shrink-0">
+                      <div className="relative shrink-0">
                         {conv.participant.avatar_url ? (
                           <Image src={conv.participant.avatar_url} alt={conv.participant.name} width={48} height={48} className="rounded-full" />
                         ) : (
-                          <div className="w-12 h-12 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          <div className="w-12 h-12 bg-linear-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                             {conv.participant.name?.charAt(0) || 'U'}
                           </div>
                         )}
@@ -428,7 +416,7 @@ export default function InstructorMessagesPage() {
                         </div>
                         <p className="text-sm text-gray-600 truncate">{conv.lastMessage}</p>
                         {conv.unread > 0 && (
-                          <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-teal-600 text-white text-xs font-medium rounded-full mt-1">
+                          <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-teal-600 text-white text-xs font-medium rounded-full mt-1">
                             {conv.unread}
                           </span>
                         )}
@@ -460,7 +448,7 @@ export default function InstructorMessagesPage() {
                       {selectedConversation.participant.avatar_url ? (
                         <Image src={selectedConversation.participant.avatar_url} alt={selectedConversation.participant.name} width={40} height={40} className="rounded-full" />
                       ) : (
-                        <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold">
+                        <div className="w-10 h-10 bg-linear-to-br from-teal-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold">
                           {selectedConversation.participant.name?.charAt(0) || 'U'}
                         </div>
                       )}
@@ -491,10 +479,10 @@ export default function InstructorMessagesPage() {
                     <div key={message.id} className={`flex ${message.sender_id === currentUserId ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] sm:max-w-md px-4 py-3 rounded-2xl ${
                         message.sender_id === currentUserId
-                          ? 'bg-gradient-to-br from-teal-500 to-teal-600 text-white'
+                          ? 'bg-linear-to-br from-teal-500 to-teal-600 text-white'
                           : 'bg-white border border-gray-200 text-gray-900'
                       }`}>
-                        <p className="text-sm break-words">{message.content}</p>
+                        <p className="text-sm wrap-break-word">{message.content}</p>
                         <div className={`flex items-center justify-end gap-1 text-xs mt-1 ${
                           message.sender_id === currentUserId ? 'text-teal-100' : 'text-gray-500'
                         }`}>
@@ -512,13 +500,13 @@ export default function InstructorMessagesPage() {
 
               <div className="p-4 border-t border-gray-200 bg-white">
                 <div className="flex items-end gap-2">
-                  <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
+                  <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
                     <Paperclip size={20} className="text-gray-600" />
                   </button>
-                  <button className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
+                  <button className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
                     <ImageIcon size={20} className="text-gray-600" />
                   </button>
-                  <button className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0">
+                  <button className="hidden sm:block p-2 hover:bg-gray-100 rounded-lg transition-colors shrink-0">
                     <Smile size={20} className="text-gray-600" />
                   </button>
                   <div className="flex-1">
@@ -534,7 +522,7 @@ export default function InstructorMessagesPage() {
                   <button
                     onClick={handleSendMessage}
                     disabled={!messageInput.trim()}
-                    className="p-3 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 flex-shrink-0"
+                    className="p-3 bg-linear-to-br from-teal-500 to-teal-600 text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 shrink-0"
                   >
                     <Send size={20} />
                   </button>

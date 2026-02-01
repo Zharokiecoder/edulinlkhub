@@ -93,7 +93,19 @@ const Navbar = () => {
 
   const handleDashboard = () => {
     setIsOpen(false);
-    router.push('/dashboard');
+    switch (profile?.role) {
+      case 'admin':
+        router.push('/admin');
+        break;
+      case 'educator':
+        router.push('/dashboard/instructor');
+        break;
+      case 'student':
+        router.push('/dashboard/student');
+        break;
+      default:
+        router.push('/dashboard/student');
+    }
   };
 
   return (

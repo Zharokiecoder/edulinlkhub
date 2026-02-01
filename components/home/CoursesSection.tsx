@@ -61,11 +61,84 @@ const courses = [
   },
 ];
 
+// Reusable pill component
+const Pill = ({ category }: { category: { name: string; color: string } }) => (
+  <div className="relative shrink-0">
+    <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-[70%] h-4 bg-green-400/40 rounded-full blur-md"></div>
+    <div
+      className={`${category.color} text-white rounded-full shadow-xl relative`}
+      style={{
+        width: '55px',
+        height: '220px',
+        transform: 'rotate(-10deg)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <span
+        className="text-sm font-semibold tracking-wide"
+        style={{
+          writingMode: 'vertical-rl',
+          textOrientation: 'mixed',
+        }}
+      >
+        {category.name}
+      </span>
+    </div>
+  </div>
+);
+
+// Reusable course card component
+const CourseCard = ({ course, fullWidth }: { course: typeof courses[0]; fullWidth?: boolean }) => (
+  <div className={`bg-white rounded-2xl shadow-2xl overflow-hidden ${fullWidth ? 'w-full' : 'w-112.5'}`}>
+    <div className="flex gap-6 p-6">
+      <div className="relative w-40 h-full shrink-0 rounded-xl overflow-hidden">
+        <Image
+          src={course.image}
+          alt={course.title}
+          width={160}
+          height={200}
+          className="object-cover w-full h-full"
+        />
+      </div>
+      <div className="flex flex-col justify-between flex-1">
+        <div>
+          <h4 className="text-lg font-bold text-gray-900 mb-2">{course.title}</h4>
+          <p className="text-gray-600 text-xs mb-3 leading-relaxed">{course.description}</p>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1">
+              {[...Array(course.rating)].map((_, i) => (
+                <span key={i} className="text-yellow-400 text-sm">⭐</span>
+              ))}
+            </div>
+            <p className="text-gray-900 font-bold text-base">{course.price}</p>
+          </div>
+        </div>
+        <button className="bg-[#0D9488] text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-[#0a7a6f] transition-all w-auto">
+          EXPLORE NOW
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// Mobile pills row - horizontally scrollable
+const MobilePills = ({ categories }: { categories: typeof courses[0]['categories'] }) => (
+  <div className="overflow-x-auto pb-6 px-4">
+    <div className="flex gap-4" style={{ minWidth: 'max-content' }}>
+      {categories.map((category, i) => (
+        <Pill key={i} category={category} />
+      ))}
+    </div>
+  </div>
+);
+
 const CoursesSection = () => {
   return (
     <section className="py-16 md:py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Section Header */}
         <div className="mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -86,47 +159,29 @@ const CoursesSection = () => {
                   <span className="text-2xl">{course.icon}</span>
                   <h3 className="text-xl font-bold text-gray-900">{course.title}</h3>
                 </div>
-                <a 
-                  href="#" 
+                <a
+                  href="#"
                   className="flex items-center gap-2 text-[#0D9488] font-semibold hover:underline"
                 >
                   SEE ALL <ArrowRight size={20} />
                 </a>
               </div>
 
-              {/* Course Content */}
+              {/* ===== MOBILE LAYOUT (card only, pills hidden) ===== */}
+              <div className="lg:hidden">
+                <CourseCard course={course} fullWidth />
+              </div>
+
+              {/* ===== DESKTOP LAYOUT ===== */}
               {index === 0 ? (
                 // English: Pills on left, Card on right
-                <div className="grid grid-cols-12 gap-8 items-center">
+                <div className="hidden lg:grid grid-cols-12 gap-8 items-center">
                   {/* Pills Section - Left */}
                   <div className="col-span-12 lg:col-span-7">
                     <div className="bg-gray-100 rounded-3xl p-8 min-h-70 flex items-center justify-center">
                       <div className="flex items-center gap-4 justify-center">
                         {course.categories.map((category, catIdx) => (
-                          <div key={catIdx} className="relative">
-                            <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-[70%] h-4 bg-green-400/40 rounded-full blur-md"></div>
-                            <div
-                              className={`${category.color} text-white rounded-full shadow-xl relative`}
-                              style={{
-                                width: '55px',
-                                height: '220px',
-                                transform: 'rotate(-10deg)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <span 
-                                className="text-sm font-semibold tracking-wide"
-                                style={{
-                                  writingMode: 'vertical-rl',
-                                  textOrientation: 'mixed',
-                                }}
-                              >
-                                {category.name}
-                              </span>
-                            </div>
-                          </div>
+                          <Pill key={catIdx} category={category} />
                         ))}
                       </div>
                     </div>
@@ -134,137 +189,29 @@ const CoursesSection = () => {
 
                   {/* Course Card - Right */}
                   <div className="col-span-12 lg:col-span-5">
-                    <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-                      <div className="flex gap-6 p-6">
-                        <div className="relative w-40 h-full shrink-0 rounded-xl overflow-hidden">
-                          <Image
-                            src={course.image}
-                            alt={course.title}
-                            width={160}
-                            height={200}
-                            className="object-cover w-full h-full"
-                          />
-                        </div>
-                        <div className="flex flex-col justify-between flex-1">
-                          <div>
-                            <h4 className="text-lg font-bold text-gray-900 mb-2">{course.title}</h4>
-                            <p className="text-gray-600 text-xs mb-3 leading-relaxed">{course.description}</p>
-                            
-                            {/* Rating and Price on same row */}
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-1">
-                                {[...Array(course.rating)].map((_, i) => (
-                                  <span key={i} className="text-yellow-400 text-sm">⭐</span>
-                                ))}
-                              </div>
-                              <p className="text-gray-900 font-bold text-base">{course.price}</p>
-                            </div>
-                          </div>
-                          <button className="bg-[#0D9488] text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-[#0a7a6f] transition-all w-auto">
-                            EXPLORE NOW
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    <CourseCard course={course} />
                   </div>
                 </div>
               ) : (
                 // Math & Creative Writing: Pills split around card
-                <div className="relative">
+                <div className="hidden lg:block relative">
                   <div className="bg-gray-100 rounded-3xl p-8 min-h-70 flex items-center justify-center gap-8">
                     {/* Left Pills */}
                     <div className="flex items-center gap-4">
                       {course.categories.slice(0, index === 1 ? 4 : 1).map((category, catIdx) => (
-                        <div key={catIdx} className="relative">
-                          <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-[70%] h-4 bg-green-400/40 rounded-full blur-md"></div>
-                          <div
-                            className={`${category.color} text-white rounded-full shadow-xl relative`}
-                            style={{
-                              width: '55px',
-                              height: '220px',
-                              transform: 'rotate(-10deg)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <span 
-                              className="text-sm font-semibold tracking-wide"
-                              style={{
-                                writingMode: 'vertical-rl',
-                                textOrientation: 'mixed',
-                              }}
-                            >
-                              {category.name}
-                            </span>
-                          </div>
-                        </div>
+                        <Pill key={catIdx} category={category} />
                       ))}
                     </div>
 
                     {/* Course Card - Center */}
                     <div className="shrink-0 z-10">
-                      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden w-112.5">
-                        <div className="flex gap-6 p-6">
-                          <div className="relative w-40 h-full shrink-0 rounded-xl overflow-hidden">
-                            <Image
-                              src={course.image}
-                              alt={course.title}
-                              width={160}
-                              height={200}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                          <div className="flex flex-col justify-between flex-1">
-                            <div>
-                              <h4 className="text-lg font-bold text-gray-900 mb-2">{course.title}</h4>
-                              <p className="text-gray-600 text-xs mb-3 leading-relaxed">{course.description}</p>
-                              
-                              {/* Rating and Price on same row */}
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-1">
-                                  {[...Array(course.rating)].map((_, i) => (
-                                    <span key={i} className="text-yellow-400 text-sm">⭐</span>
-                                  ))}
-                                </div>
-                                <p className="text-gray-900 font-bold text-base">{course.price}</p>
-                              </div>
-                            </div>
-                            <button className="bg-[#0D9488] text-white px-4 py-2 rounded-full text-xs font-bold hover:bg-[#0a7a6f] transition-all w-auto">
-                              EXPLORE NOW
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      <CourseCard course={course} />
                     </div>
 
                     {/* Right Pills */}
                     <div className="flex items-center gap-4">
                       {course.categories.slice(index === 1 ? 4 : 1).map((category, catIdx) => (
-                        <div key={catIdx} className="relative">
-                          <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 w-[70%] h-4 bg-green-400/40 rounded-full blur-md"></div>
-                          <div
-                            className={`${category.color} text-white rounded-full shadow-xl relative`}
-                            style={{
-                              width: '55px',
-                              height: '220px',
-                              transform: 'rotate(-10deg)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <span 
-                              className="text-sm font-semibold tracking-wide"
-                              style={{
-                                writingMode: 'vertical-rl',
-                                textOrientation: 'mixed',
-                              }}
-                            >
-                              {category.name}
-                            </span>
-                          </div>
-                        </div>
+                        <Pill key={catIdx} category={category} />
                       ))}
                     </div>
                   </div>
